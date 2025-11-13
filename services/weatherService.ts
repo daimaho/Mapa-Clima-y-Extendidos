@@ -1,4 +1,3 @@
-
 import { API_BASE_URL, API_KEY, WEATHER_CONDITION_MAP, CONDITION_PRIORITY, CONDITION_TEXT_MAP_ES } from '../constants';
 import type { Location, ProcessedLocationData, ForecastDay, OpenWeatherResponse, ForecastListItem, CurrentWeather, TimeOfDayForecast } from '../types';
 
@@ -19,7 +18,7 @@ async function generateWeatherSummary(weather: CurrentWeather, locationName: str
             aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
         }
 
-        const prompt = `Eres un presentador del tiempo para un canal de televisión en Chaco, Argentina. Genera un reporte breve y amigable (máximo 20 palabras) para la localidad de ${locationName}. Las condiciones actuales son: ${weather.temp}°C y ${weather.condition}.`;
+        const prompt = `Eres un presentador del tiempo para un canal de televisión en Chaco, Argentina. Genera un reporte breve y amigable (máximo 20 palabras) para la localidad de ${locationName}.`;
         
         const response = await aiClient.models.generateContent({
             model: 'gemini-2.5-flash',
