@@ -1,0 +1,5 @@
+{
+  "name": "Weather Forecast TV Board",
+  "description": "A fullscreen weather forecast display for 6 Argentinian localities, designed for live TV broadcast environments like TriCaster. Features instant location switching, silent background data updates, and animated weather icons.",
+  "requestFramePermissions": []
+}
