@@ -13,11 +13,11 @@ const TimeOfDayCard: React.FC<TimeOfDayCardProps> = ({ forecast }) => {
         className="relative w-[380px] h-[530px] bg-cover bg-center text-white flex flex-col items-center justify-between p-3 shadow-2xl rounded-2xl overflow-hidden"
         style={{ backgroundImage: "url('/cont_3.webp')" }}
     >
-        <div className="bg-[#E6007E] text-center w-full py-1.5 rounded-lg mt-1">
+        <div className="bg-[#E6007E] text-center w-full py-1.5 rounded-lg mt-1 ml-4">
             <h3 className="font-bold text-3xl tracking-wider">{forecast.period}</h3>
         </div>
 
-        <div className="flex-grow flex flex-col items-center justify-center w-full -mt-4">
+        <div className="flex-grow flex flex-col items-center justify-center w-full -mt-4 ml-4">
             <div className="w-44 h-44">
                 <video
                     src={`${ICON_PATH}${forecast.icon}`}
@@ -32,7 +32,7 @@ const TimeOfDayCard: React.FC<TimeOfDayCardProps> = ({ forecast }) => {
             </p>
         </div>
 
-        <div className="w-full mb-3 px-3">
+        <div className="w-full mb-3 px-3 ml-4">
             <div className="bg-[#2D758F] text-center w-full py-2.5 rounded-lg">
                 <p className="font-semibold text-3xl tracking-wider">{forecast.pop}</p>
             </div>
