@@ -32,14 +32,14 @@ export const LOCATIONS: Location[] = [
 ];
 
 export const MAP_DISPLAY_LOCATIONS = [
-  { name: "TACO POZO", shortName: "TACO POZO", pos: { top: '23%', left: '18%' } },
-  { name: "JUAN JOSÉ CASTELLI", shortName: "J.J. CASTELLI", pos: { top: '20%', left: '46%' } },
-  { name: "GANCEDO", shortName: "GANCEDO", pos: { top: '60%', left: '26%' } },
-  { name: "CHARATA", shortName: "CHARATA", pos: { top: '55%', left: '40%' } },
-  { name: "VILLA ÁNGELA", shortName: "VILLA ANGELA", pos: { top: '70%', left: '46%' } },
-  { name: "PCIA. ROQUE SÁENZ PEÑA", shortName: "SAENZ PEÑA", pos: { top: '48%', left: '56%' } },
-  { name: "GRAL. JOSÉ DE SAN MARTÍN", shortName: "SAN MARTIN", pos: { top: '39%', left: '68%' } },
-  { name: "CHARADAI", shortName: "CHARADAI", pos: { top: '75%', left: '60%' } },
+  { name: "TACO POZO", shortName: "TACO POZO", pos: { top: '25%', left: '26%' } },
+  { name: "JUAN JOSÉ CASTELLI", shortName: "J.J. CASTELLI", pos: { top: '24%', left: '44%' } },
+  { name: "GANCEDO", shortName: "GANCEDO", pos: { top: '59%', left: '38%' } },
+  { name: "CHARATA", shortName: "CHARATA", pos: { top: '49%', left: '46%' } },
+  { name: "VILLA ÁNGELA", shortName: "VILLA ANGELA", pos: { top: '71%', left: '48%' } },
+  { name: "PCIA. ROQUE SÁENZ PEÑA", shortName: "SAENZ PEÑA", pos: { top: '45%', left: '54%' } },
+  { name: "GRAL. JOSÉ DE SAN MARTÍN", shortName: "SAN MARTIN", pos: { top: '43%', left: '64%' } },
+  { name: "CHARADAI", shortName: "CHARADAI", pos: { top: '67%', left: '58%' } },
 ];
 
 
