@@ -12,7 +12,7 @@ interface MapLocationCardProps {
 const MapLocationCard: React.FC<MapLocationCardProps> = ({ locationName, weather, position, isVisible }) => {
   return (
     <div
-      className="absolute w-[180px] h-[140px] transition-opacity duration-300"
+      className="absolute w-[145px] h-[185px] transition-opacity duration-300"
       style={{
         ...position,
         opacity: isVisible ? 1 : 0,
@@ -36,7 +36,7 @@ const MapLocationCard: React.FC<MapLocationCardProps> = ({ locationName, weather
           </p>
         </div>
 
-        <div className="w-16 h-16 mb-1">
+        <div className="w-24 h-24 mb-1">
           <video
             src={`${ICON_PATH}${weather.icon}`}
             autoPlay

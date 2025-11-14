@@ -16,7 +16,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ forecast }) => {
         className="absolute inset-0 w-full h-full object-cover z-0" 
         alt="Card background" 
       />
-      <div className="relative z-10 flex flex-col h-full p-3">
+      <div className="relative z-10 flex flex-col h-full p-1">
         <div className="flex-shrink-0 text-center mb-1">
             <h3 
               className="inline-block bg-black/25 backdrop-blur-sm text-white text-2xl font-bold px-6 py-1 rounded-md shadow-lg"
@@ -25,7 +25,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ forecast }) => {
                 {forecast.dayName}
             </h3>
         </div>
-        <div className="flex-grow grid grid-cols-2 items-center gap-2 pl-8">
+        <div className="flex-grow grid grid-cols-2 items-center gap-14 pl-24">
             <div className="flex flex-col items-center justify-center">
                 <div className="w-40 h-40">
                     <video
@@ -39,7 +39,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ forecast }) => {
                     ></video>
                 </div>
                 <p 
-                  className="text-xl font-semibold text-center mt-2 whitespace-nowrap"
+                  className="text-xl font-semibold text-center mt-2 pl-0 whitespace-nowrap"
                   style={{textShadow: '1px 1px 3px rgba(0,0,0,0.5)'}}
                 >
                     {forecast.condition}
