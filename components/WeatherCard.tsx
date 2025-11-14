@@ -25,7 +25,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ forecast }) => {
                 {forecast.dayName}
             </h3>
         </div>
-        <div className="flex-grow grid grid-cols-2 items-center gap-2">
+        <div className="flex-grow grid grid-cols-2 items-center gap-2 pl-8">
             <div className="flex flex-col items-center justify-center">
                 <div className="w-40 h-40">
                     <video
