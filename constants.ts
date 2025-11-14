@@ -29,6 +29,7 @@ export const LOCATIONS: Location[] = [
   { name: "CHARATA", subname: "Chaco", lat: -27.2135, lon: -61.1895 },
   { name: "GANCEDO", subname: "Chaco", lat: -27.4875, lon: -61.6749 },
   { name: "CHARADAI", subname: "Chaco", lat: -27.6713, lon: -59.8821 },
+  
 ];
 
 export const MAP_DISPLAY_LOCATIONS = [
@@ -40,6 +41,7 @@ export const MAP_DISPLAY_LOCATIONS = [
   { name: "PCIA. ROQUE SÁENZ PEÑA", shortName: "SAENZ PEÑA", pos: { top: '45%', left: '54%' } },
   { name: "GRAL. JOSÉ DE SAN MARTÍN", shortName: "SAN MARTIN", pos: { top: '43%', left: '64%' } },
   { name: "CHARADAI", shortName: "CHARADAI", pos: { top: '67%', left: '58%' } },
+  { name: "RESISTENCIA", shortName: "RESISTENCIA", pos: { top: '64%', left: '69%' } },
 ];
 
 
