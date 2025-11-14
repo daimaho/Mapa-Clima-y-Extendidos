@@ -145,9 +145,26 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
         };
     };
 
-    const morningForecast = todayForecasts.find(f => f.dt_txt.includes("09:00:00"));
-    const afternoonForecast = todayForecasts.find(f => f.dt_txt.includes("15:00:00"));
-    const nightForecast = todayForecasts.find(f => f.dt_txt.includes("21:00:00"));
+    // Helper function to get hour from forecast item
+    const getHour = (item: ForecastListItem): number => {
+        return parseInt(item.dt_txt.slice(11, 13), 10);
+    };
+
+    // Find forecasts for different times of day based on available data in ranges
+    const morningForecast = todayForecasts.find(f => {
+        const hour = getHour(f);
+        return hour >= 6 && hour <= 11;
+    });
+
+    const afternoonForecast = todayForecasts.find(f => {
+        const hour = getHour(f);
+        return hour >= 12 && hour <= 18;
+    });
+
+    const nightForecast = todayForecasts.find(f => {
+        const hour = getHour(f);
+        return hour >= 19 && hour <= 23;
+    });
 
     if (morningForecast) timeOfDayForecasts.push(createTimeOfDayForecast(morningForecast, 'MAÑANA'));
     if (afternoonForecast) timeOfDayForecasts.push(createTimeOfDayForecast(afternoonForecast, 'TARDE'));
