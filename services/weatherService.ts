@@ -131,8 +131,9 @@ const dayName = date.toLocaleDateString('es-ES', {
     // Process today's forecast for Resistencia view
     const timeOfDayForecasts: TimeOfDayForecast[] = [];
     // Get today's date in Argentina timezone (UTC-3)
-    const argentinaDateForToday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
-    const todayStr = argentinaDateForToday.toISOString().slice(0, 10);
+    // OpenWeather API returns dates in UTC, so filter using UTC
+    const nowUTC = new Date();
+    const todayStr = nowUTC.toISOString().slice(0, 10);
     const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(todayStr));
 
     const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
