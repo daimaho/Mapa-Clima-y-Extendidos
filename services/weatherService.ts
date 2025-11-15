@@ -72,9 +72,8 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
 
     // Process daily forecasts for the next days
     const dailyData: { [key: string]: { temps: number[], conditions: { condition: string; pod: 'd' | 'n' }[] } } = {};
-    // Get today's date in Argentina timezone (UTC-3)
-    const argentinaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
-    const today = argentinaDate.toISOString().slice(0, 10);
+    // OpenWeather API returns dates in UTC, so we use UTC for filtering
+const today = new Date().toISOString().slice(0, 10);
 
     data.list.forEach((item: ForecastListItem) => {
         const dateStr = item.dt_txt.slice(0, 10);
