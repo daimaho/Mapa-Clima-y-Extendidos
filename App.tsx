@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { LOCATIONS, BACKGROUND_VIDEO_URL, API_KEY } from './constants';
 import { fetchWeatherForLocation } from './services/weatherService';
@@ -7,6 +6,7 @@ import LocationDisplay from './components/LocationDisplay';
 import WeatherMap from './components/WeatherMap';
 import ResistenciaForecast from './components/ResistenciaForecast';
 import BackButton from './components/BackButton';
+import FullscreenButton from './components/FullscreenButton';  // ← Importar aquí
 
 type View = 'home' | 'forecast' | 'map' | 'resistencia';
 
@@ -18,7 +18,7 @@ const App: React.FC = () => {
                 <div>
                     <h1 className="text-5xl font-bold mb-4">CONFIGURACIÓN REQUERIDA</h1>
                     <p className="mb-2">Falta la API Key de OpenWeather.</p>
-                    <p>Por favor, edita el archivo <code className="bg-black px-2 py-1 rounded text-yellow-300">constants.ts</code> y reemplaza <code className="bg-black px-2 py-1 rounded text-yellow-300">"REPLACE_WITH_YOUR_API_KEY"</code> con tu clave personal.</p>
+                    <p>Por favor, edita el archivo <code className="bg-black px-2 py-1 rounded text-yellow-300">constants.ts</code> y reemplaza <code className="bg-black px-2 py-1 rounded text-yellow-300">API_KEY</code>.</p>
                 </div>
             </div>
         );
@@ -145,6 +145,7 @@ const App: React.FC = () => {
             
             <main className={`relative z-20 w-full h-full ${view !== 'home' ? 'group' : ''}`}>
                 {view !== 'home' && <BackButton onClick={() => setView('home')} />}
+                <FullscreenButton />  {/* ← Agregar aquí, fuera del condicional */}
 
                 {view === 'home' && (
                     <div className="flex flex-col items-center justify-center h-full text-white p-8 text-center">
