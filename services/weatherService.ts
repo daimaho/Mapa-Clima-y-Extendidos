@@ -93,8 +93,11 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
     const forecasts: ForecastDay[] = Object.entries(dailyData)
         .slice(0, 4) // Take only the next 4 days
         .map(([dateStr, { temps, conditions }]) => {
-            const date = new Date(dateStr + 'T12:00:00Z'); // Use noon UTC to avoid timezone issues
-            const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' }).toUpperCase();
+            const date = new Date(dateStr + 'T12:00:00');
+const dayName = date.toLocaleDateString('es-ES', { 
+    weekday: 'long',
+    timeZone: 'America/Argentina/Buenos_Aires' 
+}).toUpperCase();
             
             const tempMax = Math.round(Math.max(...temps));
             const tempMin = Math.round(Math.min(...temps));
