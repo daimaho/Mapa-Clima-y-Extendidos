@@ -72,11 +72,19 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
 
     // Process daily forecasts for the next days
     const dailyData: { [key: string]: { temps: number[], conditions: { condition: string; pod: 'd' | 'n' }[] } } = {};
-    // OpenWeather API returns dates in UTC, so we use UTC for filtering
-const today = new Date().toISOString().slice(0, 10);
+
+    // Get today's date in Argentina timezone (UTC-3)
+    const nowUTC = new Date();
+    const argentinaOffset = -3 * 60; // UTC-3 in minutes
+    const argentinaTime = new Date(nowUTC.getTime() + argentinaOffset * 60 * 1000);
+    const today = argentinaTime.toISOString().slice(0, 10);
 
     data.list.forEach((item: ForecastListItem) => {
-        const dateStr = item.dt_txt.slice(0, 10);
+        // Convert UTC datetime to Argentina timezone
+        const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+        const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
+        const dateStr = itemDateArgentina.toISOString().slice(0, 10);
+        
         if (dateStr === today) return; // Skip today's data for the 4-day forecast section
 
         if (!dailyData[dateStr]) {
@@ -93,10 +101,10 @@ const today = new Date().toISOString().slice(0, 10);
         .slice(0, 4) // Take only the next 4 days
         .map(([dateStr, { temps, conditions }]) => {
             const date = new Date(dateStr + 'T12:00:00');
-const dayName = date.toLocaleDateString('es-ES', { 
-    weekday: 'long',
-    timeZone: 'America/Argentina/Buenos_Aires' 
-}).toUpperCase();
+            const dayName = date.toLocaleDateString('es-ES', { 
+                weekday: 'long',
+                timeZone: 'America/Argentina/Buenos_Aires' 
+            }).toUpperCase();
             
             const tempMax = Math.round(Math.max(...temps));
             const tempMin = Math.round(Math.min(...temps));
@@ -129,53 +137,85 @@ const dayName = date.toLocaleDateString('es-ES', {
         });
     
     // Process today's forecast for Resistencia view
-    const timeOfDayForecasts: TimeOfDayForecast[] = [];
-    // Get today's date in Argentina timezone (UTC-3)
-    // OpenWeather API returns dates in UTC, so filter using UTC
-    const nowUTC = new Date();
-    const todayStr = nowUTC.toISOString().slice(0, 10);
-    const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(todayStr));
+const timeOfDayForecasts: TimeOfDayForecast[] = [];
 
-    const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
-        const conditionId = item.weather[0].id;
-        const normalizedCondition = normalizeCondition(conditionId);
-        const dayOrNight = item.sys.pod === 'd' ? 'day' : 'night';
-        let iconFilename = normalizedCondition;
-        if (normalizedCondition === 'clear' || normalizedCondition === 'partly_cloudy') {
-            iconFilename = `${normalizedCondition}_${dayOrNight}`;
-        }
-        return {
-            period,
-            temp: Math.round(item.main.temp),
-            icon: `${dayOrNight}/${iconFilename}.webm`,
-            pop: formatPop(item.pop)
-        };
+// Get today's date in Argentina timezone (UTC-3)
+const nowUTC2 = new Date();
+const argentinaOffset2 = -3 * 60; // UTC-3 in minutes
+const argentinaTime2 = new Date(nowUTC2.getTime() + argentinaOffset2 * 60 * 1000);
+const todayStr = argentinaTime2.toISOString().slice(0, 10);
+
+// Calculate tomorrow's date
+const tomorrowTime = new Date(argentinaTime2.getTime() + 24 * 60 * 60 * 1000);
+const tomorrowStr = tomorrowTime.toISOString().slice(0, 10);
+
+// Filter forecasts - convert each UTC datetime to Argentina timezone
+const todayForecasts = data.list.filter(item => {
+    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
+    const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
+    return itemDateStr === todayStr;
+});
+
+// If no forecasts available for today, use tomorrow's forecasts
+const forecastsToUse = todayForecasts.length > 0 ? todayForecasts : data.list.filter(item => {
+    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
+    const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
+    return itemDateStr === tomorrowStr;
+});
+
+const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
+    const conditionId = item.weather[0].id;
+    const normalizedCondition = normalizeCondition(conditionId);
+    
+    // Determine day/night based on Argentina timezone hour, not API's pod
+    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+    const argentinaOffset = -3 * 60; // UTC-3 in minutes
+    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
+    const argentinaHour = itemDateArgentina.getUTCHours();
+    
+    const dayOrNight = (argentinaHour >= 6 && argentinaHour < 20) ? 'day' : 'night';
+    
+    let iconFilename = normalizedCondition;
+    if (normalizedCondition === 'clear' || normalizedCondition === 'partly_cloudy') {
+        iconFilename = `${normalizedCondition}_${dayOrNight}`;
+    }
+    return {
+        period,
+        temp: Math.round(item.main.temp),
+        icon: `${dayOrNight}/${iconFilename}.webm`,
+        pop: formatPop(item.pop)
     };
+};
 
-    // Helper function to get hour from forecast item
-    const getHour = (item: ForecastListItem): number => {
-        return parseInt(item.dt_txt.slice(11, 13), 10);
-    };
+// Helper function to get hour from forecast item in Argentina timezone
+const getHour = (item: ForecastListItem): number => {
+    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+    const argentinaOffset = -3 * 60; // UTC-3 in minutes
+    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
+    return itemDateArgentina.getUTCHours();
+};
 
-    // Find forecasts for different times of day based on available data in ranges
-    const morningForecast = todayForecasts.find(f => {
-        const hour = getHour(f);
-        return hour >= 6 && hour <= 11;
-    });
+// Find forecasts for different times of day based on available data in ranges
+const morningForecast = forecastsToUse.find(f => {
+    const hour = getHour(f);
+    return hour >= 6 && hour <= 11;
+});
 
-    const afternoonForecast = todayForecasts.find(f => {
-        const hour = getHour(f);
-        return hour >= 12 && hour <= 18;
-    });
+const afternoonForecast = forecastsToUse.find(f => {
+    const hour = getHour(f);
+    return hour >= 12 && hour <= 18;
+});
 
-    const nightForecast = todayForecasts.find(f => {
-        const hour = getHour(f);
-        return hour >= 19 && hour <= 23;
-    });
+const nightForecast = forecastsToUse.find(f => {
+    const hour = getHour(f);
+    return hour >= 19 && hour <= 23;
+});
 
-    if (morningForecast) timeOfDayForecasts.push(createTimeOfDayForecast(morningForecast, 'MAÑANA'));
-    if (afternoonForecast) timeOfDayForecasts.push(createTimeOfDayForecast(afternoonForecast, 'TARDE'));
-    if (nightForecast) timeOfDayForecasts.push(createTimeOfDayForecast(nightForecast, 'NOCHE'));
+if (morningForecast) timeOfDayForecasts.push(createTimeOfDayForecast(morningForecast, 'MAÑANA'));
+if (afternoonForecast) timeOfDayForecasts.push(createTimeOfDayForecast(afternoonForecast, 'TARDE'));
+if (nightForecast) timeOfDayForecasts.push(createTimeOfDayForecast(nightForecast, 'NOCHE'));
 
 
     return {
