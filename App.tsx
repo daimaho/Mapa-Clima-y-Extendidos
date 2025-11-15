@@ -6,7 +6,7 @@ import LocationDisplay from './components/LocationDisplay';
 import WeatherMap from './components/WeatherMap';
 import ResistenciaForecast from './components/ResistenciaForecast';
 import BackButton from './components/BackButton';
-import FullscreenButton from './components/FullscreenButton';  // ← Importar aquí
+import FullscreenButton from './components/FullscreenButton';
 
 type View = 'home' | 'forecast' | 'map' | 'resistencia';
 
@@ -18,7 +18,7 @@ const App: React.FC = () => {
                 <div>
                     <h1 className="text-5xl font-bold mb-4">CONFIGURACIÓN REQUERIDA</h1>
                     <p className="mb-2">Falta la API Key de OpenWeather.</p>
-                    <p>Por favor, edita el archivo <code className="bg-black px-2 py-1 rounded text-yellow-300">constants.ts</code> y reemplaza <code className="bg-black px-2 py-1 rounded text-yellow-300">API_KEY</code>.</p>
+                    <p>Por favor, edita el archivo <code className="bg-black px-2 py-1 rounded text-yellow-300">constants.ts</code> y reemplaza <code className="bg-black px-2 py-1 rounded text-yellow-300">"REPLACE_WITH_YOUR_API_KEY"</code> con tu API Key.</p>
                 </div>
             </div>
         );
@@ -56,27 +56,83 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (isLoading || view === 'home') return;
+            if (isLoading) return;
+            
+            // Global shortcuts: Ctrl + Numpad 1/2/3 para cambiar de vista
+            if (event.ctrlKey && !dataFetched) return; // No permitir cambio si no hay datos
+            
+            if (event.ctrlKey) {
+                switch (event.key) {
+                    case '1':
+                    case 'End': // Numpad 1
+                        event.preventDefault();
+                        setView('forecast');
+                        setCurrentIndex(0); // Reset to first location
+                        return;
+                    case '2':
+                    case 'ArrowDown': // Numpad 2
+                        event.preventDefault();
+                        setView('map');
+                        return;
+                    case '3':
+                    case 'PageDown': // Numpad 3
+                        event.preventDefault();
+                        setView('resistencia');
+                        return;
+                }
+            }
+
+            // View-specific navigation
+            if (view === 'home') return;
             
             if (view === 'forecast') {
-                switch (event.key) {
-                    case 'ArrowRight':
-                        setCurrentIndex(prev => (prev + 1) % weatherData.length);
-                        break;
-                    case 'ArrowLeft':
-                        setCurrentIndex(prev => (prev - 1 + weatherData.length) % weatherData.length);
-                        break;
-                    case 'Escape':
-                        setView('home');
-                        break;
-                    default:
-                        if (!isNaN(parseInt(event.key)) && parseInt(event.key) >= 1 && parseInt(event.key) <= weatherData.length) {
-                            setCurrentIndex(parseInt(event.key) - 1);
-                        }
-                        break;
+                // Arrow keys for navigation
+                if (event.key === 'ArrowRight') {
+                    setCurrentIndex(prev => (prev + 1) % weatherData.length);
+                    return;
+                }
+                if (event.key === 'ArrowLeft') {
+                    setCurrentIndex(prev => (prev - 1 + weatherData.length) % weatherData.length);
+                    return;
+                }
+                
+                // Escape to go back
+                if (event.key === 'Escape') {
+                    setView('home');
+                    return;
+                }
+                
+                // Number keys (1-9) and Numpad keys for direct location access
+                const numberKey = event.key;
+                const numpadMap: {[key: string]: number} = {
+                    'End': 1,           // Numpad 1
+                    'ArrowDown': 2,     // Numpad 2
+                    'PageDown': 3,      // Numpad 3
+                    'ArrowLeft': 4,     // Numpad 4
+                    'Clear': 5,         // Numpad 5
+                    'ArrowRight': 6,    // Numpad 6
+                    'Home': 7,          // Numpad 7
+                    'ArrowUp': 8,       // Numpad 8
+                    'PageUp': 9,        // Numpad 9
+                };
+                
+                let locationNumber: number | null = null;
+                
+                // Check if it's a regular number key (1-9)
+                if (!event.ctrlKey && !isNaN(parseInt(numberKey)) && parseInt(numberKey) >= 1 && parseInt(numberKey) <= 9) {
+                    locationNumber = parseInt(numberKey);
+                }
+                // Check if it's a numpad key (without Ctrl pressed)
+                else if (!event.ctrlKey && numpadMap[numberKey]) {
+                    locationNumber = numpadMap[numberKey];
+                }
+                
+                if (locationNumber !== null && locationNumber <= weatherData.length) {
+                    event.preventDefault();
+                    setCurrentIndex(locationNumber - 1);
                 }
             } else if (view === 'map' || view === 'resistencia') {
-                 if (event.key === 'Escape') {
+                if (event.key === 'Escape') {
                     setView('home');
                 }
             }
@@ -86,7 +142,7 @@ const App: React.FC = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [isLoading, view, weatherData.length]);
+    }, [isLoading, view, weatherData.length, dataFetched]);
     
     const renderForecastScreen = () => (
         <>
@@ -145,7 +201,7 @@ const App: React.FC = () => {
             
             <main className={`relative z-20 w-full h-full ${view !== 'home' ? 'group' : ''}`}>
                 {view !== 'home' && <BackButton onClick={() => setView('home')} />}
-                <FullscreenButton />  {/* ← Agregar aquí, fuera del condicional */}
+                <FullscreenButton />
 
                 {view === 'home' && (
                     <div className="flex flex-col items-center justify-center h-full text-white p-8 text-center">
