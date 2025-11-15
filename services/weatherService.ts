@@ -72,7 +72,9 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
 
     // Process daily forecasts for the next days
     const dailyData: { [key: string]: { temps: number[], conditions: { condition: string; pod: 'd' | 'n' }[] } } = {};
-    const today = new Date().toISOString().slice(0, 10);
+    // Get today's date in Argentina timezone (UTC-3)
+    const argentinaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+    const today = argentinaDate.toISOString().slice(0, 10);
 
     data.list.forEach((item: ForecastListItem) => {
         const dateStr = item.dt_txt.slice(0, 10);
@@ -126,7 +128,9 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
     
     // Process today's forecast for Resistencia view
     const timeOfDayForecasts: TimeOfDayForecast[] = [];
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // Get today's date in Argentina timezone (UTC-3)
+    const argentinaDateForToday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+    const todayStr = argentinaDateForToday.toISOString().slice(0, 10);
     const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(todayStr));
 
     const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
