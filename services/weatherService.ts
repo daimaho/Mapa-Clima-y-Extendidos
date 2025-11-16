@@ -30,11 +30,9 @@ async function generateWeatherSummary(weather: CurrentWeather, locationName: str
 
     } catch (error) {
         console.error("Error during Gemini summary generation (import or API call):", error);
-        // If anything goes wrong, return a safe default message.
         return "El análisis del clima no está disponible en este momento.";
     }
 }
-
 
 function normalizeCondition(id: number): string {
     return WEATHER_CONDITION_MAP[id] || 'clear';
@@ -44,7 +42,7 @@ function formatConditionText(condition: string): string {
     return CONDITION_TEXT_MAP_ES[condition] || condition;
 }
 
-function formatPop(pop: number): string { // pop is 0-1
+function formatPop(pop: number): string {
     const p = Math.round(pop * 100);
     if (p < 10) return "0 - 10%";
     if (p < 40) return "10 - 40%";
@@ -52,9 +50,7 @@ function formatPop(pop: number): string { // pop is 0-1
     return "70 - 100%";
 }
 
-
 export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLocationData, 'currentWeatherSummary'> => {
-    // Process current weather from the first item in the list
     const currentForecast = data.list[0];
     const currentConditionId = currentForecast.weather[0].id;
     const normalizedCurrentCondition = normalizeCondition(currentConditionId);
@@ -70,22 +66,19 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
         icon: `${dayOrNightForCurrent}/${currentIconFilename}.webm`,
     };
 
-    // Process daily forecasts for the next days
     const dailyData: { [key: string]: { temps: number[], conditions: { condition: string; pod: 'd' | 'n' }[] } } = {};
 
-    // Get today's date in Argentina timezone (UTC-3)
     const nowUTC = new Date();
-    const argentinaOffset = -3 * 60; // UTC-3 in minutes
+    const argentinaOffset = -3 * 60;
     const argentinaTime = new Date(nowUTC.getTime() + argentinaOffset * 60 * 1000);
     const today = argentinaTime.toISOString().slice(0, 10);
 
     data.list.forEach((item: ForecastListItem) => {
-        // Convert UTC datetime to Argentina timezone
         const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
         const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
         const dateStr = itemDateArgentina.toISOString().slice(0, 10);
         
-        if (dateStr === today) return; // Skip today's data for the 4-day forecast section
+        if (dateStr === today) return;
 
         if (!dailyData[dateStr]) {
             dailyData[dateStr] = { temps: [], conditions: [] };
@@ -98,130 +91,140 @@ export const processWeatherData = (data: OpenWeatherResponse): Omit<ProcessedLoc
     });
 
     const forecasts: ForecastDay[] = Object.entries(dailyData)
-        .slice(0, 4) // Take only the next 4 days
-        .map(([dateStr, { temps, conditions }]) => {
-            const date = new Date(dateStr + 'T12:00:00');
-            const dayName = date.toLocaleDateString('es-ES', { 
-                weekday: 'long',
-                timeZone: 'America/Argentina/Buenos_Aires' 
-            }).toUpperCase();
+    .slice(0, 4)
+    .map(([dateStr, { temps, conditions }]) => {
+        const date = new Date(dateStr + 'T12:00:00');
+        const dayName = date.toLocaleDateString('es-ES', { 
+            weekday: 'long',
+            timeZone: 'America/Argentina/Buenos_Aires' 
+        }).toUpperCase();
+        
+        const tempMax = Math.round(Math.max(...temps));
+        const tempMin = Math.round(Math.min(...temps));
+        
+        let dominantCondition = 'clear';
+        let icon = 'day/clear_day.webm';
+        
+        if (conditions && conditions.length > 0) {
+            // Filter only daytime conditions for better representation
+            const daytimeConditions = conditions.filter(c => c.pod === 'd');
+            const conditionsToUse = daytimeConditions.length > 0 ? daytimeConditions : conditions;
             
-            const tempMax = Math.round(Math.max(...temps));
-            const tempMin = Math.round(Math.min(...temps));
+            // Count frequency of each condition
+            const conditionCounts: { [key: string]: number } = {};
+            conditionsToUse.forEach(c => {
+                conditionCounts[c.condition] = (conditionCounts[c.condition] || 0) + 1;
+            });
             
-            let dominantCondition = 'clear';
-            let icon = 'day/clear_day.webm'; // Default icon
-            
-            if (conditions && conditions.length > 0) {
-                const dominantConditionEntry = conditions.reduce((a, b) => 
-                    (CONDITION_PRIORITY[a.condition] > CONDITION_PRIORITY[b.condition] ? a : b)
-                );
-                dominantCondition = dominantConditionEntry.condition;
-                const dayOrNight = dominantConditionEntry.pod === 'd' ? 'day' : 'night';
-                
-                let iconFilename = dominantCondition;
-                if (dominantCondition === 'clear' || dominantCondition === 'partly_cloudy') {
-                    iconFilename = `${dominantCondition}_${dayOrNight}`;
+            // Find the most frequent condition
+            let maxCount = 0;
+            let mostFrequentCondition = 'clear';
+            Object.entries(conditionCounts).forEach(([cond, count]) => {
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostFrequentCondition = cond;
                 }
-                
-                icon = `${dayOrNight}/${iconFilename}.webm`;
+            });
+            
+            dominantCondition = mostFrequentCondition;
+            
+            // Always use day icons for extended forecast
+            const dayOrNight = 'day';
+            
+            let iconFilename = dominantCondition;
+            if (dominantCondition === 'clear' || dominantCondition === 'partly_cloudy') {
+                iconFilename = `${dominantCondition}_${dayOrNight}`;
             }
             
-            return {
-                dayName,
-                tempMax,
-                tempMin,
-                condition: formatConditionText(dominantCondition),
-                icon,
-            };
-        });
+            icon = `${dayOrNight}/${iconFilename}.webm`;
+        }
+        
+        return {
+            dayName,
+            tempMax,
+            tempMin,
+            condition: formatConditionText(dominantCondition),
+            icon,
+        };
+    });
     
-    // Process today's forecast for Resistencia view
-const timeOfDayForecasts: TimeOfDayForecast[] = [];
+    const timeOfDayForecasts: TimeOfDayForecast[] = [];
 
-// Get today's date in Argentina timezone (UTC-3)
-const nowUTC2 = new Date();
-const argentinaOffset2 = -3 * 60; // UTC-3 in minutes
-const argentinaTime2 = new Date(nowUTC2.getTime() + argentinaOffset2 * 60 * 1000);
-const todayStr = argentinaTime2.toISOString().slice(0, 10);
+    const nowUTC2 = new Date();
+    const argentinaOffset2 = -3 * 60;
+    const argentinaTime2 = new Date(nowUTC2.getTime() + argentinaOffset2 * 60 * 1000);
+    const todayStr = argentinaTime2.toISOString().slice(0, 10);
 
-// Calculate tomorrow's date
-const tomorrowTime = new Date(argentinaTime2.getTime() + 24 * 60 * 60 * 1000);
-const tomorrowStr = tomorrowTime.toISOString().slice(0, 10);
+    const tomorrowTime = new Date(argentinaTime2.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowStr = tomorrowTime.toISOString().slice(0, 10);
 
-// Filter forecasts - convert each UTC datetime to Argentina timezone
-const todayForecasts = data.list.filter(item => {
-    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
-    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
-    const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
-    return itemDateStr === todayStr;
-});
+    const todayForecasts = data.list.filter(item => {
+        const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+        const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
+        const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
+        return itemDateStr === todayStr;
+    });
 
-// If no forecasts available for today, use tomorrow's forecasts
-const forecastsToUse = todayForecasts.length > 0 ? todayForecasts : data.list.filter(item => {
-    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
-    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
-    const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
-    return itemDateStr === tomorrowStr;
-});
+    const forecastsToUse = todayForecasts.length > 0 ? todayForecasts : data.list.filter(item => {
+        const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+        const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset2 * 60 * 1000);
+        const itemDateStr = itemDateArgentina.toISOString().slice(0, 10);
+        return itemDateStr === tomorrowStr;
+    });
 
-const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
-    const conditionId = item.weather[0].id;
-    const normalizedCondition = normalizeCondition(conditionId);
-    
-    // Determine day/night based on Argentina timezone hour, not API's pod
-    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
-    const argentinaOffset = -3 * 60; // UTC-3 in minutes
-    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
-    const argentinaHour = itemDateArgentina.getUTCHours();
-    
-    const dayOrNight = (argentinaHour >= 6 && argentinaHour < 20) ? 'day' : 'night';
-    
-    let iconFilename = normalizedCondition;
-    if (normalizedCondition === 'clear' || normalizedCondition === 'partly_cloudy') {
-        iconFilename = `${normalizedCondition}_${dayOrNight}`;
-    }
-    return {
-        period,
-        temp: Math.round(item.main.temp),
-        icon: `${dayOrNight}/${iconFilename}.webm`,
-        pop: formatPop(item.pop)
+    const createTimeOfDayForecast = (item: ForecastListItem, period: 'MAÑANA' | 'TARDE' | 'NOCHE'): TimeOfDayForecast => {
+        const conditionId = item.weather[0].id;
+        const normalizedCondition = normalizeCondition(conditionId);
+        
+        const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+        const argentinaOffset = -3 * 60;
+        const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
+        const argentinaHour = itemDateArgentina.getUTCHours();
+        
+        const dayOrNight = (argentinaHour >= 6 && argentinaHour < 20) ? 'day' : 'night';
+        
+        let iconFilename = normalizedCondition;
+        if (normalizedCondition === 'clear' || normalizedCondition === 'partly_cloudy') {
+            iconFilename = `${normalizedCondition}_${dayOrNight}`;
+        }
+        return {
+            period,
+            temp: Math.round(item.main.temp),
+            icon: `${dayOrNight}/${iconFilename}.webm`,
+            pop: formatPop(item.pop)
+        };
     };
-};
 
-// Helper function to get hour from forecast item in Argentina timezone
-const getHour = (item: ForecastListItem): number => {
-    const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
-    const argentinaOffset = -3 * 60; // UTC-3 in minutes
-    const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
-    return itemDateArgentina.getUTCHours();
-};
+    const getHour = (item: ForecastListItem): number => {
+        const itemDateUTC = new Date(item.dt_txt.replace(' ', 'T') + 'Z');
+        const argentinaOffset = -3 * 60;
+        const itemDateArgentina = new Date(itemDateUTC.getTime() + argentinaOffset * 60 * 1000);
+        return itemDateArgentina.getUTCHours();
+    };
 
-// Find forecasts for different times of day based on available data in ranges
-const morningForecast = forecastsToUse.find(f => {
-    const hour = getHour(f);
-    return hour >= 6 && hour <= 11;
-});
+    const morningForecast = forecastsToUse.find(f => {
+        const hour = getHour(f);
+        return hour >= 6 && hour <= 11;
+    });
 
-const afternoonForecast = forecastsToUse.find(f => {
-    const hour = getHour(f);
-    return hour >= 12 && hour <= 18;
-});
+    const afternoonForecast = forecastsToUse.find(f => {
+        const hour = getHour(f);
+        return hour >= 12 && hour <= 18;
+    });
 
-const nightForecast = forecastsToUse.find(f => {
-    const hour = getHour(f);
-    return hour >= 19 && hour <= 23;
-});
+    const nightForecast = forecastsToUse.find(f => {
+        const hour = getHour(f);
+        return hour >= 19 && hour <= 23;
+    });
 
-if (morningForecast) timeOfDayForecasts.push(createTimeOfDayForecast(morningForecast, 'MAÑANA'));
-if (afternoonForecast) timeOfDayForecasts.push(createTimeOfDayForecast(afternoonForecast, 'TARDE'));
-if (nightForecast) timeOfDayForecasts.push(createTimeOfDayForecast(nightForecast, 'NOCHE'));
-
+    if (morningForecast) timeOfDayForecasts.push(createTimeOfDayForecast(morningForecast, 'MAÑANA'));
+    if (afternoonForecast) timeOfDayForecasts.push(createTimeOfDayForecast(afternoonForecast, 'TARDE'));
+    if (nightForecast) timeOfDayForecasts.push(createTimeOfDayForecast(nightForecast, 'NOCHE'));
 
     return {
         location: {
             name: data.city.name.toUpperCase(),
-            subname: 'Chaco', // Placeholder as API doesn't return province
+            subname: 'Chaco',
             lat: data.city.coord.lat,
             lon: data.city.coord.lon,
         },
@@ -244,10 +247,8 @@ export const fetchWeatherForLocation = async (location: Location): Promise<Proce
         const data: OpenWeatherResponse = await response.json();
         const processedData = processWeatherData(data);
         
-        // Generate Gemini summary
         const summary = await generateWeatherSummary(processedData.currentWeather, location.name);
         
-        // Override API city name with our constant name for consistency
         processedData.location.name = location.name;
         processedData.location.subname = location.subname;
         
